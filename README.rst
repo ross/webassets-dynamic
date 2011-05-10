@@ -31,7 +31,7 @@ You will need to configure the following values in your settings.py:
     ASSETS_UPDATER = False
     # by default set ASSETS_DEBUG to DEBUG, meaning that when we're in debug
     # mode we'll get the expanded list of individual js/css files with their
-    # dynamic paths. 
+    # dynamic paths.
     ASSETS_DEBUG = DEBUG
 
 An example assets.py using this module follows:
@@ -39,17 +39,14 @@ An example assets.py using this module follows:
     from django_assets import Bundle, register
     from webassets_dynamic import dynamic_assets
     from os.path import join
-    import webassets_slimmer
-    
-    from slimmer import css_slimmer, js_slimmer
-    
+
     register('js_all', Bundle(
         dynamic_assets('sharedappjs', 'js/jquery.min.js'),
         dynamic_assets('sharedappjs', 'js/log.js'),
         dynamic_assets('static', 'js/app.js'),
-        filters=['js_slimmer'], output=join('js', 'js_all.js')))
-    
+        filters=['jsmin'], output=join('js', 'js_all.js')))
+
     register('css_all', Bundle(
         dynamic_assets('static', 'css/screen.css'),
-        filters=['cssrewrite', 'css_slimmer'], 
+        filters=['cssrewrite', 'cssmin'],
         output=join('css', 'css_all.css')))
