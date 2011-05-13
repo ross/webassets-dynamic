@@ -31,7 +31,14 @@ class URLPatternHelper:
 helper = URLPatternHelper()
 
 # TODO: should find a better way to get at this
-mode = sys.argv[1]
+# by default we're in 'serve' mode
+mode = ''
+try:
+    # if there's an argv[1] grab it as it will tell us we're in assets mode
+    mode = sys.argv[1]
+except:
+    pass
+
 def dynamic_assets(name, file):
     if mode == 'assets':
         return join(helper.get_path(name), file)
