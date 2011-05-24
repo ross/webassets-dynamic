@@ -4,6 +4,8 @@ from django.core.urlresolvers import reverse
 from django.views.static import serve
 from django_assets import Bundle, register
 from webassets.filter import Filter, register_filter
+from webassets.script import CommandLineEnvironment
+from os import stat
 from os.path import join
 import sys
 
@@ -11,8 +13,8 @@ class URLPatternHelper:
     names_to_paths = {}
 
     def __init__(self):
-        urls = __import__(settings.ROOT_URLCONF, globals(), locals(), 
-                ['urlpatterns'], -1) 
+        urls = __import__(settings.ROOT_URLCONF, globals(), locals(),
+                ['urlpatterns'], -1)
         for url_pattern in urls.urlpatterns:
             self._walk(url_pattern)
 
@@ -44,3 +46,34 @@ def dynamic_assets(name, file):
         return join(helper.get_path(name), file)
     else:
         return reverse(name, args=[file])
+
+## add in our check helper command
+
+def check(self):
+    """Check to see if assets need to be rebuilt.
+
+    A non-zero exit status will be returned if any of the input files are
+    newer (based on mtime) than their output file. This is intended to be used
+    in pre-commit hooks.
+    """
+    from pprint import pprint
+    self.log.debug('Checking:')
+    needsupdate = False
+    for bundle in self.environment:
+        basedir = bundle._get_env(None).directory
+        outputname = None
+        outputtime = None
+        for to_build in bundle.iterbuild():
+            self.log.debug('  asset: %s', to_build.output)
+            outputname = join(basedir, to_build.output)
+            outputtime = stat(outputname).st_mtime
+        for filename in bundle.get_files():
+            inputtime = stat(filename).st_mtime
+            self.log.debug('    %s', filename)
+            if inputtime > outputtime:
+                self.log.warn('%s is newer than %s', filename, outputname)
+                needsupdate = True
+    if needsupdate:
+        sys.exit(-1)
+
+CommandLineEnvironment.Commands['check'] = check
