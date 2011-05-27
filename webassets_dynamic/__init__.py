@@ -5,6 +5,7 @@ from django.views.static import serve
 from django_assets import Bundle, register
 from webassets.filter import Filter, register_filter
 from webassets.script import CommandLineEnvironment
+from webassets.updater import TimestampUpdater
 from os import stat
 from os.path import join
 import sys
