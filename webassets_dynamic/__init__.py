@@ -5,9 +5,8 @@ from django.views.static import serve
 from django_assets import Bundle, register
 from webassets.filter import Filter, register_filter
 from webassets.script import CommandLineEnvironment
-from webassets.updater import TimestampUpdater
 from os import stat
-from os.path import join
+from os.path import isfile, join
 import sys
 
 class URLPatternHelper:
@@ -54,19 +53,27 @@ def check(self):
     """Check to see if assets need to be rebuilt.
 
     A non-zero exit status will be returned if any of the input files are
-    newer (based on mtime) than their output file. This is intended to be
-    used in pre-commit hooks.
+    newer (based on mtime) than their output file. This is intended to be used
+    in pre-commit hooks.
     """
+    from pprint import pprint
+    self.log.debug('Checking:')
     needsupdate = False
-    updater = self.environment.updater
-    if not updater:
-        self.log.debug('no updater configured, using TimestampUpdater')
-        updater = TimestampUpdater()
     for bundle in self.environment:
-        self.log.info('Checking asset: %s', bundle.output)
-        if updater.needs_rebuild(bundle, self.environment):
-            self.log.info('  needs update')
+        outputname = join(self.environment.directory, bundle.output)
+        outputtime = None
+        self.log.debug('  asset: %s', outputname)
+        if not isfile(outputname):
+            self.log.warn('%s does not exist', outputname)
             needsupdate = True
+        else:
+            outputtime = stat(outputname).st_mtime
+            for filename in bundle.get_files():
+                inputtime = stat(filename).st_mtime
+                self.log.debug('    %s', filename)
+                if inputtime > outputtime:
+                    self.log.warn('%s is newer than %s', filename, outputname)
+                    needsupdate = True
     if needsupdate:
         sys.exit(-1)
 
